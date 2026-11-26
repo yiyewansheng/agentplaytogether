@@ -11058,24 +11058,28 @@ function sampleBand(b, u) {
     b.hw[i0] + (b.hw[i1] - b.hw[i0]) * t
   ];
 }
-function makeBand(x0, x1, yStart, yBranch, yEnd, wStart, wBranch, wEnd, meta) {
+function makeBand(x0, x1, yStart, yBranch, yEnd, wStart, wBranch, wEnd, meta, bendFrac) {
   var xs = new Float32Array(FLOW_SEG + 1), ys = new Float32Array(FLOW_SEG + 1);
   var nx = new Float32Array(FLOW_SEG + 1), ny = new Float32Array(FLOW_SEG + 1);
   var hw = new Float32Array(FLOW_SEG + 1);
-  var splitU = 0.25, xBr = x0 + (x1 - x0) * splitU, spanL = xBr - x0, spanR = x1 - xBr;
-  var s1 = [x0, yStart, x0 + spanL * 0.46, yStart, xBr - spanL * 0.40, yBranch, xBr, yBranch];
-  var s2 = [xBr, yBranch, xBr + spanR * 0.34, yBranch, x1 - spanR * 0.34, yEnd, x1, yEnd];
+  var bf = (bendFrac !== undefined) ? bendFrac : 0.5;
+  var splitU = 0.24, xBr = x0 + (x1 - x0) * splitU, spanL = xBr - x0, spanR = x1 - xBr;
+  /* 底部单点收束 → 陡峭电蓝上扫弧线 → 干脆折入右侧水平层流通道 */
+  var cp1x = x0 + spanL * (0.36 + bf * 0.14);
+  var cp2x = x0 + spanL * (0.50 + bf * 0.14);
+  var s1 = [x0, yStart, cp1x, yStart, cp2x, yBranch, xBr, yBranch];
+  var s2 = [xBr, yBranch, xBr + spanR * 0.35, yBranch + (yEnd - yBranch) * 0.35, x1 - spanR * 0.35, yBranch + (yEnd - yBranch) * 0.65, x1, yEnd];
   var k, u, p, w;
   for (k = 0; k <= FLOW_SEG; k++) {
     u = k / FLOW_SEG;
     if (u <= splitU) {
       var tu = u / splitU;
       p = bzPt(s1, tu);
-      w = wStart + (wBranch - wStart) * ease(tu);
+      w = wStart + (wBranch - wStart) * Math.pow(ease(tu), 1.25);
     } else {
       var tr = (u - splitU) / (1 - splitU);
       p = bzPt(s2, tr);
-      w = wBranch + (wEnd - wBranch) * Math.pow(tr, 0.85);
+      w = wBranch + (wEnd - wBranch) * Math.pow(tr, 0.88);
     }
     xs[k] = p[0]; ys[k] = p[1]; hw[k] = w;
   }
@@ -11084,31 +11088,31 @@ function makeBand(x0, x1, yStart, yBranch, yEnd, wStart, wBranch, wEnd, meta) {
     var dx = xs[k1] - xs[k0], dy = ys[k1] - ys[k0], l = Math.sqrt(dx * dx + dy * dy) || 1;
     nx[k] = -dy / l; ny[k] = dx / l;
   }
-  return { xs: xs, ys: ys, nx: nx, ny: ny, hw: hw, splitU: splitU, x0: x0, x1: x1, xBr: xBr, yBranch: yBranch, yEnd: yEnd, meta: meta || {} };
+  return { xs: xs, ys: ys, nx: nx, ny: ny, hw: hw, splitU: splitU, x0: x0, x1: x1, xBr: xBr, yStart: yStart, yBranch: yBranch, yEnd: yEnd, meta: meta || {} };
 }
 function initFlowParticles() {
   flowParts = [];
   if (!flowBands.length) return;
   var rr = mulberry32(314159);
-  /* 更高密度（5400 条精细短条纹）+ 更短长度，视觉层次更细腻 */
-  var totalN = L.narrow ? 1900 : 5400;
+  /* 高密度 6600 条锐利短条纹，右侧白亮饱满、左侧电蓝紧密汇聚 */
+  var totalN = L.narrow ? 2200 : 6600;
   var nB = flowBands.length, i, per;
   var hasDel = flowBands[nB - 1].meta.kind === "del";
   for (var bi = 0; bi < nB; bi++) {
     var isDel = flowBands[bi].meta.kind === "del";
-    per = Math.round(totalN * (isDel ? 0.08 : 0.92 / Math.max(1, nB - (hasDel ? 1 : 0))));
+    per = Math.round(totalN * (isDel ? 0.11 : 0.89 / Math.max(1, nB - (hasDel ? 1 : 0))));
     for (i = 0; i < per; i++) {
-      var laneSlot = (Math.floor(rr() * 28) + 0.5) / 28 * 2 - 1;
-      var v = clamp(laneSlot * 0.90 + (rr() - 0.5) * 0.18, -1, 1);
+      var laneSlot = (Math.floor(rr() * 30) + 0.5) / 30 * 2 - 1;
+      var v = clamp(laneSlot * 0.92 + (rr() - 0.5) * 0.14, -1, 1);
       var coreBias = 1 - Math.abs(v);
       var q = rr();
-      var tier = q < 0.52 ? 0 : (q < 0.86 ? 1 : 2);
+      var tier = q < 0.44 ? 0 : (q < 0.82 ? 1 : 2);
       flowParts.push({
         b: bi,
         u: rr(),
         v: v,
-        spd: (0.14 + rr() * 0.24) * (0.76 + coreBias * 0.46),
-        len: 0.0065 + rr() * 0.0135 + (tier === 2 ? 0.0055 : 0),
+        spd: (0.16 + rr() * 0.25) * (0.78 + coreBias * 0.44),
+        len: 0.006 + rr() * 0.0125 + (tier === 2 ? 0.0055 : 0),
         tier: tier,
         ph: rr() * TAU,
         blink: rr() * TAU
@@ -11123,7 +11127,7 @@ function buildCurves() {
   var jParts = (typeof job === "function" && job()) ? job().parts : [];
   if (!L.narrow) {
     var st = L.stage, colL = rel($("colL")), leftEdge = colL.x + colL.w;
-    /* 1. 恢复原版左侧 STATE IN 全高 352 CH 密集丝扇连接 */
+    /* 1. 左侧 STATE IN 全高密集丝扇连接 */
     var bx = leftEdge + 34 * bsc, b0 = colL.y + 38 * bsc, b1 = colL.y + colL.h - 14 * bsc;
     busIn = { x: bx, y0: b0, y1: b1, label: "STATE IN" };
     var nPer = 44, total = AG.length * nPer;
@@ -11137,32 +11141,33 @@ function buildCurves() {
         inByAgent[i].push(curvesIn.length); curvesIn.push(cv);
       }
     }
-    /* 2. 恢复原版右侧 DISPATCH OUT 全高 ~150 CH 密集丝扇连接 */
+    /* 2. 右侧 DISPATCH OUT 全高密集丝扇连接 */
     var colR = rel($("colR")), bay = rel($("bay")), dv = rel($("deliv")), pcs = partsBox.children;
     var ox = colR.x - 34 * bsc, o0 = bay.y + 52 * bsc, o1 = dv.y + dv.h - 14 * bsc;
     busOut = { x: ox, y0: o0, y1: o1, label: "DISPATCH OUT" };
     var nBands = Math.max(1, pcs.length);
-    var flowTop = Math.max(o0 + 18 * bsc, st.y + st.h * 0.12);
-    var flowBot = Math.min(o1 - 12 * bsc, st.y + st.h * 0.86);
-    var splitY = flowTop + (flowBot - flowTop) * 0.84;
-    var slotH = (splitY - flowTop) / nBands;
+    var nLanes = nBands + 1; /* 等距排布全部工位通道 + 底部 DELIVERY 通道 */
+    var flowTop = Math.max(o0 + 14 * bsc, st.y + st.h * 0.09);
+    var flowBot = Math.min(o1 - 8 * bsc, st.y + st.h * 0.87);
+    var slotH = (flowBot - flowTop) / nLanes;
     var x0 = bx + 5 * bsc, x1 = ox - 5 * bsc;
-    var trunk0 = b0 + (b1 - b0) * 0.34, trunk1 = b1 - 8 * bsc;
+    /* 左下角单点极致收束源头（所有电蓝光束由此喷涌上扬并依次水平展开） */
+    var yPinch = flowBot - 4 * bsc;
     var nOut = Math.max(14, Math.round(134 / nBands));
     var outSpan = (dv.y - 18 * bsc) - o0;
+    var bandW = slotH * 0.365;
     for (i = 0; i < nBands; i++) {
-      var frac = nBands > 1 ? i / (nBands - 1) : 0.5;
-      var yStart = trunk0 + (0.04 + frac * 0.82) * (trunk1 - trunk0);
+      var frac = nLanes > 1 ? i / (nLanes - 1) : 0.5;
+      var yStart = yPinch - (nLanes - 1 - i) * 0.45 * bsc;
       var yBr = flowTop + (i + 0.5) * slotH;
-      var fanTilt = (frac - 0.5) * slotH * 0.30;
-      var yRight = clamp(yBr + fanTilt, flowTop + slotH * 0.24, splitY - slotH * 0.14);
+      /* 右侧轻微上扬张角，保持干脆平行层流 */
+      var yRight = yBr - (1 - frac * 1.15) * 14 * bsc;
       var pMeta = jParts[i] || { n: "通道 " + (i + 1), en: "LANE " + (i + 1), task: "队列就绪", ag: AGENTS[i % AGENTS.length].id };
       var agIdx = AGI.hasOwnProperty(pMeta.ag) ? AGI[pMeta.ag] : (i % AGENTS.length);
-      var bandW = slotH * 0.38;
-      flowBands.push(makeBand(x0, x1, yStart, yBr, yRight, bandW * 0.16, bandW * 0.80, bandW * 1.14, {
+      flowBands.push(makeBand(x0, x1, yStart, yBr, yRight, 1.5 * bsc, bandW * 0.84, bandW * 1.10, {
         kind: "part", idx: i, n: pMeta.n, en: pMeta.en, task: pMeta.task, ag: pMeta.ag, c: AGENTS[agIdx].c, rate: 18 + (i * 11 + 7) % 34
-      }));
-      /* 右侧 DISPATCH OUT → 工位卡片（恢复原版平顺密集丝扇） */
+      }, frac));
+      /* 右侧 DISPATCH OUT → 工位卡片 */
       outByPart.push([]);
       var pr = rel(pcs[i]), col = pcs[i].style.getPropertyValue("--c") || "#00d9ff";
       var seg0 = o0 + (i / nBands) * outSpan, seg1 = o0 + ((i + 1) / nBands) * outSpan;
@@ -11174,23 +11179,12 @@ function buildCurves() {
         outByPart[i].push(curvesOut.length); curvesOut.push(cv);
       }
     }
-    /* STATE IN 上半段温和汇流导丝（衔接全高 STATE IN 与主干，消除顶部断点） */
-    if (flowBands.length) {
-      var topBand = flowBands[0], joinPt = sampleBand(topBand, 0.20);
-      for (k = 0; k < 24; k++) {
-        var uTop = k / 23;
-        var syTop = b0 + uTop * (trunk0 - b0);
-        var jy = joinPt[1] + (uTop - 0.5) * topBand.hw[Math.round(FLOW_SEG * 0.20)] * 1.4;
-        var dTop = joinPt[0] - x0;
-        curvesCollect.push({ s1: [x0, syTop, x0 + dTop * 0.42, syTop, joinPt[0] - dTop * 0.45, jy, joinPt[0], jy], s2: null, f: 1 });
-      }
-    }
-    /* 底部交付流通道 + 恢复原版 16 丝交付连接 */
-    var delH = Math.max(22 * bsc, flowBot - splitY);
-    var delYStart = trunk1, delYBr = splitY + delH * 0.56, delYEnd = splitY + delH * 0.62;
-    flowBands.push(makeBand(x0, x1, delYStart, delYBr, delYEnd, delH * 0.10, delH * 0.30, delH * 0.42, {
-      kind: "del", idx: -1, n: "交付通道", en: "DELIVERY", task: "整机归档", ag: "deploy", c: "#d7ff00", rate: 14.8
-    }));
+    /* 底部交付流通道（与上方 7 条等距平齐，自左下同源平滑滑出，右侧呈橄榄金黄质感） */
+    var delYBr = flowTop + (nBands + 0.5) * slotH;
+    var delYEnd = delYBr + 4 * bsc;
+    flowBands.push(makeBand(x0, x1, yPinch, delYBr, delYEnd, 1.3 * bsc, bandW * 0.84, bandW * 1.10, {
+      kind: "del", idx: -1, n: "交付通道", en: "DELIVERY", task: "整机归档", ag: "deploy", c: "#d7ff00", rate: 21.8
+    }, 1.0));
     var delBus0 = dv.y + 10 * bsc, delBus1 = o1;
     for (k = 0; k < 16; k++) {
       var dy = delBus0 + (k / 15) * Math.max(12, delBus1 - delBus0);
@@ -11242,14 +11236,16 @@ function renderWeb() {
     var isDel = b.meta.kind === "del";
     g = fc.createLinearGradient(b.x0, 0, b.x1, 0);
     if (isDel) {
-      g.addColorStop(0, "rgba(22,60,255,0.18)");
-      g.addColorStop(0.35, "rgba(0,217,255,0.14)");
-      g.addColorStop(1, "rgba(215,255,0,0.10)");
+      g.addColorStop(0, "rgba(26,90,255,0.28)");
+      g.addColorStop(0.24, "rgba(0,198,255,0.16)");
+      g.addColorStop(0.56, "rgba(96,122,22,0.12)");
+      g.addColorStop(1, "rgba(176,196,24,0.20)");
     } else {
-      g.addColorStop(0, "rgba(22,60,255,0.34)");
-      g.addColorStop(0.22, "rgba(22,60,255,0.26)");
-      g.addColorStop(0.48, "rgba(0,217,255,0.18)");
-      g.addColorStop(1, "rgba(255,255,255,0.11)");
+      g.addColorStop(0, "rgba(30,96,255,0.44)");
+      g.addColorStop(0.20, "rgba(18,74,255,0.32)");
+      g.addColorStop(0.42, "rgba(0,210,255,0.17)");
+      g.addColorStop(0.72, "rgba(180,220,245,0.10)");
+      g.addColorStop(1, "rgba(255,255,255,0.13)");
     }
     fc.fillStyle = g;
     fc.beginPath();
@@ -11262,14 +11258,39 @@ function renderWeb() {
     }
     fc.closePath();
     fc.fill();
+
+    /* 通道上下清晰玻璃边界线（强轮廓感） */
+    var ge = fc.createLinearGradient(b.x0, 0, b.x1, 0);
+    if (isDel) {
+      ge.addColorStop(0, "rgba(64,160,255,0.45)");
+      ge.addColorStop(0.30, "rgba(0,217,255,0.30)");
+      ge.addColorStop(1, "rgba(195,215,48,0.34)");
+    } else {
+      ge.addColorStop(0, "rgba(70,152,255,0.52)");
+      ge.addColorStop(0.24, "rgba(0,217,255,0.34)");
+      ge.addColorStop(0.60, "rgba(210,238,255,0.24)");
+      ge.addColorStop(1, "rgba(255,255,255,0.28)");
+    }
+    fc.strokeStyle = ge; fc.lineWidth = 0.95;
+    for (var side = -1; side <= 1; side += 2) {
+      fc.beginPath();
+      for (k = 0; k <= FLOW_SEG; k++) {
+        var sx = b.xs[k] + b.nx[k] * b.hw[k] * side;
+        var sy = b.ys[k] + b.ny[k] * b.hw[k] * side;
+        if (k === 0) fc.moveTo(sx, sy); else fc.lineTo(sx, sy);
+      }
+      fc.stroke();
+    }
+
+    /* 内部柔和层流导丝 */
     var gl = fc.createLinearGradient(b.x0, 0, b.x1, 0);
-    gl.addColorStop(0, "rgba(22,60,255,0.36)");
-    gl.addColorStop(0.26, "rgba(0,217,255,0.25)");
-    gl.addColorStop(0.62, "rgba(210,238,255,0.17)");
-    gl.addColorStop(1, "rgba(255,255,255,0.13)");
-    fc.strokeStyle = gl; fc.lineWidth = 0.6;
-    for (l = -3; l <= 3; l++) {
-      var lv = l / 3.4;
+    gl.addColorStop(0, "rgba(38,118,255,0.28)");
+    gl.addColorStop(0.28, "rgba(0,217,255,0.16)");
+    gl.addColorStop(0.65, "rgba(210,238,255,0.10)");
+    gl.addColorStop(1, isDel ? "rgba(195,215,48,0.12)" : "rgba(255,255,255,0.09)");
+    fc.strokeStyle = gl; fc.lineWidth = 0.55;
+    for (l = -2; l <= 2; l++) {
+      var lv = l / 3.0;
       fc.beginPath();
       for (k = 0; k <= FLOW_SEG; k++) {
         var lx = b.xs[k] + b.nx[k] * b.hw[k] * lv;
@@ -11279,10 +11300,17 @@ function renderWeb() {
       fc.stroke();
     }
   }
-  /* 上半部汇流极细导丝 */
-  if (curvesCollect.length) {
-    fc.strokeStyle = "rgba(22,60,255,0.16)"; fc.lineWidth = 0.65;
-    for (i = 0; i < curvesCollect.length; i++) { fc.beginPath(); pathTwo(fc, curvesCollect[i]); fc.stroke(); }
+  /* 左下角收束喷口炽白-电蓝聚焦辉光 */
+  if (flowBands.length) {
+    var fb0 = flowBands[flowBands.length - 1];
+    var px0 = fb0.x0, py0 = fb0.yStart || fb0.ys[0], prR = 68 * Math.max(0.7, L.bs);
+    var pg = fc.createRadialGradient(px0 + 6, py0, 0, px0 + 12, py0, prR);
+    pg.addColorStop(0, "rgba(235,250,255,0.92)");
+    pg.addColorStop(0.18, "rgba(60,168,255,0.68)");
+    pg.addColorStop(0.55, "rgba(22,76,255,0.22)");
+    pg.addColorStop(1, "rgba(0,0,0,0)");
+    fc.fillStyle = pg;
+    fc.beginPath(); fc.arc(px0 + 8, py0, prR, 0, TAU); fc.fill();
   }
 
   /* B. 左右两侧恢复原版高密丝扇连接 + 总线（独立于 web，始终锐利清晰） */
@@ -11741,20 +11769,20 @@ function updateAudio(dt) {
 
 /* 截屏 3-5 风格高密度短条纹调色桶（支持按音乐响度每帧动态调整透明度：忽明忽暗） */
 var FLOW_BUCKETS = [
-  { r: 22,  g: 60,  b: 255, a0: 0.12, a1: 0.58, w: 0.78 }, // 0: left deep cobalt (dim)
-  { r: 48,  g: 112, b: 255, a0: 0.20, a1: 0.90, w: 0.98 }, // 1: left electric blue (bright)
-  { r: 0,   g: 217, b: 255, a0: 0.14, a1: 0.68, w: 0.85 }, // 2: mid cyan (dim)
-  { r: 0,   g: 232, b: 255, a0: 0.24, a1: 0.98, w: 1.12 }, // 3: mid bright cyan (beat flare)
-  { r: 155, g: 228, b: 255, a0: 0.14, a1: 0.64, w: 0.82 }, // 4: mid-right ice
-  { r: 220, g: 244, b: 255, a0: 0.24, a1: 0.94, w: 1.05 }, // 5: mid-right silver flare
-  { r: 255, g: 255, b: 255, a0: 0.10, a1: 0.54, w: 0.76 }, // 6: right white fine (dim)
-  { r: 255, g: 255, b: 255, a0: 0.20, a1: 0.86, w: 1.02 }, // 7: right white bright
-  { r: 255, g: 255, b: 255, a0: 0.34, a1: 1.00, w: 1.32 }, // 8: right white blazing hero
-  { r: 255, g: 106, b: 0,   a0: 0.16, a1: 0.68, w: 0.92 }, // 9: hot forge orange
-  { r: 255, g: 142, b: 48,  a0: 0.26, a1: 0.96, w: 1.16 }, // 10: hot forge blazing
-  { r: 255, g: 234, b: 208, a0: 0.34, a1: 1.00, w: 1.34 }, // 11: hot forge white-orange
-  { r: 215, g: 255, b: 0,   a0: 0.16, a1: 0.78, w: 0.96 }, // 12: deliver volt lime
-  { r: 246, g: 255, b: 185, a0: 0.28, a1: 0.98, w: 1.24 }  // 13: deliver radiant white-lime
+  { r: 24,  g: 84,  b: 255, a0: 0.30, a1: 0.74, w: 0.88 }, // 0: left deep electric blue
+  { r: 74,  g: 156, b: 255, a0: 0.44, a1: 0.98, w: 1.15 }, // 1: left blazing sapphire-ice
+  { r: 0,   g: 214, b: 255, a0: 0.28, a1: 0.78, w: 0.92 }, // 2: mid cyan
+  { r: 58,  g: 240, b: 255, a0: 0.42, a1: 1.00, w: 1.22 }, // 3: mid bright turquoise
+  { r: 175, g: 235, b: 255, a0: 0.26, a1: 0.74, w: 0.90 }, // 4: mid-right ice
+  { r: 232, g: 248, b: 255, a0: 0.42, a1: 0.98, w: 1.18 }, // 5: mid-right bright silver
+  { r: 225, g: 235, b: 245, a0: 0.24, a1: 0.68, w: 0.85 }, // 6: right white fine
+  { r: 255, g: 255, b: 255, a0: 0.42, a1: 0.95, w: 1.16 }, // 7: right white crisp
+  { r: 255, g: 255, b: 255, a0: 0.62, a1: 1.00, w: 1.52 }, // 8: right white blazing hero
+  { r: 255, g: 106, b: 0,   a0: 0.22, a1: 0.72, w: 0.95 }, // 9: hot forge orange
+  { r: 255, g: 142, b: 48,  a0: 0.36, a1: 0.96, w: 1.20 }, // 10: hot forge blazing
+  { r: 255, g: 234, b: 208, a0: 0.46, a1: 1.00, w: 1.42 }, // 11: hot forge white-orange
+  { r: 196, g: 220, b: 46,  a0: 0.28, a1: 0.82, w: 0.98 }, // 12: deliver olive-lime
+  { r: 244, g: 255, b: 175, a0: 0.44, a1: 0.98, w: 1.32 }  // 13: deliver radiant white-lime
 ];
 var bucketPts = FLOW_BUCKETS.map(function () { return []; });
 
@@ -11919,23 +11947,28 @@ function drawComets(c, dt) {
     if (pLum > 0.78 && effTier < 2) effTier++;
     else if (pLum < 0.34 && effTier > 0) effTier--;
 
+    var isDelLane = (b.meta.kind === "del");
     var bi;
     if (isHotBand) {
-      bi = u1 < 0.28 ? 9 : (effTier >= 2 || u1 > 0.72 ? 11 : 10);
+      bi = u1 < 0.26 ? 9 : (effTier >= 2 || u1 > 0.70 ? 11 : 10);
     } else if (isDelBand) {
-      bi = (effTier >= 2 || u1 > 0.58) ? 13 : 12;
-    } else if (u1 < 0.20) {
-      bi = effTier === 0 ? 0 : 1;
-    } else if (u1 < 0.38) {
+      bi = (effTier >= 2 || u1 > 0.56) ? 13 : 12;
+    } else if (isDelLane && u1 > 0.54) {
+      bi = effTier === 0 ? 12 : (effTier === 1 ? 12 : 13);
+    } else if (u1 < 0.05) {
+      bi = effTier >= 1 ? 5 : 1;
+    } else if (u1 < 0.23) {
+      bi = effTier === 0 ? 0 : (effTier === 1 ? 1 : 3);
+    } else if (u1 < 0.45) {
       bi = effTier === 0 ? 1 : (effTier === 1 ? 2 : 3);
-    } else if (u1 < 0.56) {
+    } else if (u1 < 0.58) {
       bi = effTier === 0 ? 2 : (effTier === 1 ? 4 : 5);
     } else {
       bi = effTier === 0 ? 6 : (effTier === 1 ? 7 : 8);
     }
     var arr = bucketPts[bi];
     arr.push(x0, y0, x1, y1);
-    if (effTier === 2 && pLum > 0.56 && u1 > 0.24 && tips.length < 720) tips.push(x1, y1, isHotBand ? 1 : (isDelBand ? 2 : 0));
+    if (effTier === 2 && pLum > 0.52 && u1 > 0.22 && tips.length < 820) tips.push(x1, y1, isHotBand ? 1 : (isDelLane ? 2 : 0));
   }
 
   c.save();
