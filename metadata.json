@@ -1,0 +1,6 @@
+{
+  "name": "Agent 战术大屏",
+  "description": "纯前端 AI 智能体调度可视化大屏，支持 OPS、SPIDER、NEURAL、FACTORY、NEBULA、FORGE、WORKS、ION、PARK、HQ 十款主题切换。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
