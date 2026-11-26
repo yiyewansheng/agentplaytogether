@@ -39,7 +39,7 @@
 
 ### 01 · OPS 纸面工程
 
-![01 · OPS 纸面工程](docs/screenshots/01-ops.png)
+![01 · OPS 纸面工程](docs/screenshots/01-ops.jpg)
 
 原 v1 的调度飞轮与面板作为主题 01 保留，本二创版将四个功能面板重排到最左侧竖向停靠，右侧直接全幅展示调度飞轮，并新增 10 套配色切换下拉菜单（快捷键 `C`）与「换主题」「全屏」按钮。
 
@@ -52,7 +52,7 @@
 
 ### 02 · SPIDER 蛛网战术
 
-![02 · SPIDER 蛛网战术](docs/screenshots/02-spider.png)
+![02 · SPIDER 蛛网战术](docs/screenshots/02-spider.jpg)
 
 以 1920×1080 横屏为设计尺寸，按窗口等比缩放，推荐电脑或手机横屏观看。本二创版将巡检蛛调整为极淡半透明轨迹风格。
 
@@ -68,7 +68,7 @@
 
 ### 03 · NEURAL 神经星环
 
-![03 · NEURAL 神经星环](docs/screenshots/03-neural.png)
+![03 · NEURAL 神经星环](docs/screenshots/03-neural.jpg)
 
 three.js（WebGL）渲染的 3D agent 协同大屏。13 团神经元代表 CHIEF 总调度与 12 个执行智能体，另有 CRAWLER 巡检探针在各团之间飞行。角色、11 条工作流与 6 个交付渠道沿用 SPIDER 的配置内容；源码在两个挂载函数内分别定义这些配置。
 
@@ -81,7 +81,7 @@ three.js（WebGL）渲染的 3D agent 协同大屏。13 团神经元代表 CHIEF
 
 ### 04 · FACTORY 机器人工厂
 
-![04 · FACTORY 机器人工厂](docs/screenshots/04-factory.png)
+![04 · FACTORY 机器人工厂](docs/screenshots/04-factory.jpg)
 
 three.js（WebGL）渲染的整座 3D 机器人车间，以俯瞰视角展示「总工程 → 8 个子板块 → 工区接力 → 中央总装 → 发射」的模拟生产流程。
 
@@ -94,7 +94,7 @@ three.js（WebGL）渲染的整座 3D 机器人车间，以俯瞰视角展示「
 
 ### 05 · NEBULA 星核蜘蛛
 
-![05 · NEBULA 星核蜘蛛](docs/screenshots/05-nebula.png)
+![05 · NEBULA 星核蜘蛛](docs/screenshots/05-nebula.jpg)
 
 冰蓝、白、桃粉的 3D 星云场景：CHIEF 是中央丝带星核，12 个智能体分在三条椭圆轨道上公转，CRAWLER 星云蛛在相关工区之间跳跃、爬行和读词。
 
@@ -107,7 +107,7 @@ three.js（WebGL）渲染的整座 3D 机器人车间，以俯瞰视角展示「
 
 ### 06 · FORGE 视界熔炉
 
-![06 · FORGE 视界熔炉](docs/screenshots/06-forge.png)
+![06 · FORGE 视界熔炉](docs/screenshots/06-forge.jpg)
 
 原生 WebGL 绘制的黑洞与星核投影场景。左侧 8 个子 Agent 的情报沿彩色线束汇入黑洞，星核投影出当前工单的完整产品，再拆成代表子任务的零件，逐件锻造、合拢后交付。本二创版收窄左侧编织汇入区并自适应拓宽右侧层流主视觉区域。
 
@@ -121,7 +121,7 @@ three.js（WebGL）渲染的整座 3D 机器人车间，以俯瞰视角展示「
 
 ### 07 · WORKS 天工开物
 
-![07 · WORKS 天工开物](docs/screenshots/07-works.png)
+![07 · WORKS 天工开物](docs/screenshots/07-works.jpg)
 
 原生 WebGL 与 Canvas 2D 绘制的机械织造场景。顶部总控卫星向 8 台机械（子 Agent）派单，彩色光丝汇入 7 个织位（子任务），再一滴滴落向底部织造台，把项目逐点织出来。
 
@@ -135,7 +135,7 @@ three.js（WebGL）渲染的整座 3D 机器人车间，以俯瞰视角展示「
 
 ### 08 · ION 离子回路
 
-![08 · ION 离子回路](docs/screenshots/08-ion.png)
+![08 · ION 离子回路](docs/screenshots/08-ion.jpg)
 
 整屏是一面斜向远处延伸的决策电路墙。本二创版将每个决策区块改造为纯程序化生成的多层芯片内部 EDA 走线视图，并彻底移除所有卡片外框线与 WebGL 矩形亮边；原生 WebGL 绘制交错线路、粒子与离子光球，带泛光，不依赖 three.js。
 
@@ -149,7 +149,7 @@ three.js（WebGL）渲染的整座 3D 机器人车间，以俯瞰视角展示「
 
 ### 09 · PARK 智造园区
 
-![09 · PARK 智造园区](docs/screenshots/09-park.png)
+![09 · PARK 智造园区](docs/screenshots/09-park.jpg)
 
 一座微缩工业园区：中央调度中枢代表总调度 Agent，6 座厂房代表 6 条工作流，28 道工序与中枢共对应 29 个 Agent。工单箱从中枢经高架传送带进入车间，逐道加工后沿回收带返回，再由无人机出港交付。
 
@@ -173,7 +173,7 @@ three.js（WebGL）渲染的整座 3D 机器人车间，以俯瞰视角展示「
 
 ### 10 · HQ 智能总部
 
-![10 · HQ 智能总部](docs/screenshots/10-hq.png)
+![10 · HQ 智能总部](docs/screenshots/10-hq.jpg)
 
 一座放在深色底座上的单层回字形总部沙盘：中央是 Chief 的总经理办公室，周围是产品、设计、市场、运营、研发、人事、财务、法务行政 8 个部门，南侧大堂有会议室、前台大门和茶水间。原生 WebGL 绘制楼体、家具、人物和文件夹，不依赖 three.js。
 
